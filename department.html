@@ -1,0 +1,41 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Dept</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-[#0f172a] text-white p-4"><div class="max-w-5xl mx-auto">
+<div class="flex justify-between bg-[#1e293b] p-4 rounded-xl mb-6"><h1 id="dname" class="font-bold uppercase"></h1><button onclick="location.href='index.html'" class="bg-red-600 px-3 py-1 rounded">Logout</button></div><div id="list"></div></div>
+<script>
+const dept=localStorage.getItem('currentRole');
+document.getElementById('dname').innerText=dept+' Dashboard';
+function render(){
+if(dept==='examcell'){
+  let ors=JSON.parse(localStorage.getItem('otherRequests')||'[]');
+  document.getElementById('list').innerHTML=ors.length? `<h2 class="font-bold mb-3">📜 Certificate Requests</h2>`+ors.map(r=>`<div class="bg-[#1e293b] border border-yellow-600 p-4 rounded-xl mb-3"><b>${r.studentName} (${r.studentId})</b> - ${r.studentEmail}<br>Certs: ${r.certificates.join(', ')}<br>Reason: ${r.reason} - ${r.reasonDetail}<br>Status: ${r.status}<br>${r.status==='Pending'? `<button onclick="updateOther('${r.id}','Approved')" class="bg-green-600 px-3 py-1 rounded mt-2">Approve</button> <button onclick="updateOther('${r.id}','Rejected')" class="bg-red-600 px-3 py-1 rounded ml-2">Reject</button>`:`${r.status} - ${r.remark}`}</div>`).join('') : '<p>No requests</p>';
+  return;
+}
+let reqs=JSON.parse(localStorage.getItem('requests')||'[]');
+document.getElementById('list').innerHTML=reqs.length? `<h2 class="font-bold mb-3">No-Dues Requests</h2>`+reqs.map(r=>{
+  const st=r.status[dept]||'Pending'; const branch=r.branch||'CSE';
+  return `<div class="bg-[#1e293b] border border-gray-600 p-4 rounded-xl mb-3"><b>${r.studentName} (${r.studentId}) - ${branch}</b> - ${r.studentEmail}<br>Status: ${st} | ${r.remarks[dept]||''}<br>${st==='Pending'? `<button onclick="updateNoDue('${r.studentId}','Approved')" class="bg-green-600 px-4 py-1 rounded mt-2">Approve</button> <button onclick="updateNoDue('${r.studentId}','Rejected')" class="bg-red-600 px-4 py-1 rounded ml-2">Reject</button>`:`${st} Done`}</div>`;
+}).join('') : '<p>No requests</p>';
+}
+function updateNoDue(sid, action){
+let reqs=JSON.parse(localStorage.getItem('requests')||'[]');
+let i=reqs.findIndex(r=>r.studentId===sid);
+let remark=prompt(action==='Rejected'?'Enter reason Ex: pay 200 rupees fine':'Remark','No dues');
+if(remark===null) return;
+reqs[i].status[dept]=action;
+reqs[i].remarks[dept]=remark;
+localStorage.setItem('requests',JSON.stringify(reqs));
+alert(action+' done! Student will see QR if you wrote rupees/fee');
+render();
+}
+function updateOther(oid, action){
+let ors=JSON.parse(localStorage.getItem('otherRequests')||'[]');
+let i=ors.findIndex(r=>r.id===oid);
+let remark=prompt(action==='Rejected'?'Reason:':'Collection date:','Ready to collect with ID');
+if(remark===null) return;
+ors[i].status=action; ors[i].remark=remark;
+localStorage.setItem('otherRequests',JSON.stringify(ors));
+alert(action+' done!');
+render();
+}
+render();
+</script></body></html>

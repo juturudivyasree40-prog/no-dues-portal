@@ -1,0 +1,14 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Admin</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-[#0f172a] text-white p-6"><div class="max-w-6xl mx-auto">
+<div class="flex justify-between bg-[#1e293b] p-4 rounded-xl mb-6"><h1 class="font-bold">Admin Dashboard</h1><button onclick="location.href='index.html'" class="bg-red-600 px-3 py-1 rounded">Logout</button></div>
+<div id="stats" class="grid grid-cols-2 gap-4 mb-6"></div><div id="list"></div></div>
+<script>
+function render(){
+let reqs=JSON.parse(localStorage.getItem('requests')||'[]'); let ors=JSON.parse(localStorage.getItem('otherRequests')||'[]');
+document.getElementById('stats').innerHTML=`<div class="bg-[#1e293b] p-4 rounded">No-Dues Total: ${reqs.length}</div><div class="bg-[#1e293b] p-4 rounded">Other Cert Total: ${ors.length}</div>`;
+let html='<h2 class="font-bold mb-2">No-Dues</h2>'+reqs.map(r=>`<div class="bg-[#1e293b] p-3 rounded mb-2 text-xs">${r.studentName} (${r.studentId}) - ${r.studentEmail} - ${JSON.stringify(r.status)}</div>`).join('');
+html+='<h2 class="font-bold mt-4 mb-2">Other Certificates</h2>'+ors.map(r=>`<div class="bg-[#1e293b] p-3 rounded mb-2 text-xs">${r.studentName} (${r.studentId}) - ${r.certificates.join(', ')} - ${r.status}</div>`).join('');
+document.getElementById('list').innerHTML=html;
+}
+render(); setInterval(render,2000);
+</script></body></html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Student</title><script src="https://cdn.tailwindcss.com"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head><body class="bg-[#0f172a] text-white p-4">
+<div class="max-w-4xl mx-auto">
+<div class="flex justify-between bg-[#1e293b] p-4 rounded-xl mb-6"><h1 class="font-bold">Student: <span id="sid" class="text-blue-400"></span></h1><button onclick="location.href='index.html'" class="bg-red-600 px-3 py-1 rounded">Logout</button></div>
+
+<div id="choiceMenu" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+<div onclick="selectType('nodue')" class="bg-[#1e293b] p-8 rounded-xl border-2 border-blue-500 cursor-pointer text-center"><div class="text-4xl">🎓</div><h2 class="font-bold text-xl mt-2">No-Dues Clearance</h2><p class="text-xs text-gray-400">4 Departments Approval</p></div>
+<div onclick="selectType('others')" class="bg-[#1e293b] p-8 rounded-xl border-2 border-yellow-500 cursor-pointer text-center"><div class="text-4xl">📜</div><h2 class="font-bold text-xl mt-2">Other Certificates</h2><p class="text-xs text-gray-400">Study / SSC / PUC Memo</p></div>
+</div>
+<button id="backBtn" onclick="backToMenu()" class="hidden mb-4 bg-gray-700 px-4 py-2 rounded">⬅ Back</button>
+
+<div id="nodueSection" class="hidden">
+<div class="bg-[#1e293b] p-6 rounded-xl mb-6 border border-gray-700"><h2 class="font-bold mb-3">Raise No-Dues</h2>
+<input id="sname" placeholder="Full Name" class="w-full p-3 rounded bg-[#0f172a] border border-gray-600 mb-3">
+<input id="semail" placeholder="Your Email Ex: you@gmail.com" class="w-full p-3 rounded bg-[#0f172a] border border-gray-600 mb-3">
+<input id="dept" placeholder="Branch Ex: CSE" class="w-full p-3 rounded bg-[#0f172a] border border-gray-600 mb-3">
+<button onclick="raiseRequest()" class="bg-green-600 px-6 py-2 rounded font-bold">Raise Request</button></div>
+<div class="bg-[#1e293b] p-6 rounded-xl"><h2 class="font-bold mb-3">Live Tracking</h2><div id="tracker"></div><div id="certArea" class="mt-4"></div></div>
+</div>
+
+<div id="othersSection" class="hidden">
+<div class="bg-[#1e293b] p-6 rounded-xl border border-yellow-600 mb-6"><h2 class="font-bold mb-3">📜 Request Certificates</h2>
+<div class="bg-[#0f172a] p-3 rounded mb-3"><label><input type="checkbox" id="c_study"> Study Certificate</label><br><label><input type="checkbox" id="c_ssc"> SSC Memo</label><br><label><input type="checkbox" id="c_puc"> PUC Memo</label></div>
+<input id="o_name" placeholder="Full Name" class="w-full p-3 rounded bg-[#0f172a] border border-gray-600 mb-3">
+<input id="o_email" placeholder="Email" class="w-full p-3 rounded bg-[#0f172a] border border-gray-600 mb-3">
+<select id="o_reason" class="w-full p-3 rounded bg-[#0f172a] border border-gray-600 mb-3"><option value="">Why you need?</option><option>Higher Studies</option><option>Job</option><option>Scholarship</option><option>Other</option></select>
+<textarea id="o_detail" placeholder="Explain why you need Ex: MBA admission" class="w-full p-3 rounded bg-[#0f172a] border border-gray-600 mb-3"></textarea>
+<button onclick="raiseOther()" class="bg-yellow-600 text-black px-6 py-2 rounded font-bold">Submit to Exam Cell</button></div>
+<div class="bg-[#1e293b] p-6 rounded-xl"><h2 class="font-bold mb-3">My Other Requests</h2><div id="otherTracker"></div></div>
+</div>
+</div>
+<script>
+const id=localStorage.getItem('currentID'); if(!id) location.href='index.html'; document.getElementById('sid').innerText=id;
+function selectType(t){document.getElementById('choiceMenu').classList.add('hidden');document.getElementById('backBtn').classList.remove('hidden');if(t==='nodue'){document.getElementById('nodueSection').classList.remove('hidden');render();}else{document.getElementById('othersSection').classList.remove('hidden');renderOthers();}}
+function backToMenu(){document.getElementById('nodueSection').classList.add('hidden');document.getElementById('othersSection').classList.add('hidden');document.getElementById('choiceMenu').classList.remove('hidden');document.getElementById('backBtn').classList.add('hidden');}
+function raiseRequest(){
+const name=document.getElementById('sname').value.trim(); const email=document.getElementById('semail').value.trim(); const branch=document.getElementById('dept').value.trim()||'CSE';
+if(!name||!email.includes('@')) return alert('Enter valid name & email');
+let reqs=JSON.parse(localStorage.getItem('requests')||'[]'); if(reqs.find(r=>r.studentId===id)) return alert('Already raised');
+reqs.push({studentId:id,studentName:name,studentEmail:email,branch:branch,date:new Date().toLocaleString(),status:{library:'Pending',hostels:'Pending',sports:'Pending',accounts:'Pending'},remarks:{library:'',hostels:'',sports:'',accounts:''},signatures:{}});
+localStorage.setItem('requests',JSON.stringify(reqs)); alert('Request sent!'); render();
+}
+function render(){
+let reqs=JSON.parse(localStorage.getItem('requests')||'[]'); const my=reqs.find(r=>r.studentId===id);
+const div=document.getElementById('tracker'); const cert=document.getElementById('certArea');
+if(!my){div.innerHTML='<p class="text-gray-400">No request</p>'; cert.innerHTML=''; return;}
+let html='', allOk=true, anyRej=false, rejText='', needPay=false;
+for(let d in my.status){
+  const st=my.status[d]; const rem=(my.remarks[d]||'').toLowerCase();
+  if(st!=='Approved') allOk=false;
+  if(st==='Rejected'){anyRej=true; rejText+=`${d}: ${my.remarks[d]}<br>`; if(rem.includes('fee')||rem.includes('rupees')||rem.includes('rs')||rem.includes('pay')||rem.includes('fine')) needPay=true;}
+  html+=`<div class="border ${st==='Approved'?'border-green-500':st==='Rejected'?'border-red-500':'border-yellow-500'} p-2 rounded mb-2">${d.toUpperCase()}: ${st} ${my.remarks[d]?'| '+my.remarks[d]:''}</div>`;
+}
+div.innerHTML=html;
+if(allOk){cert.innerHTML=`<div class="bg-green-900/30 p-4 rounded text-center"><b>✅ All Approved! Certificate Ready</b><br><button onclick="download()" class="bg-blue-600 w-full py-2 rounded mt-2">Download PDF</button><button onclick="send()" class="bg-white text-black w-full py-2 rounded mt-2">Send Certificate to Email</button></div>`;}
+else if(anyRej){cert.innerHTML=`<div class="bg-red-900/30 p-4 rounded"><b>❌ Rejected:</b><br>${rejText}${needPay? `<div class="mt-3 bg-white text-black p-4 rounded text-center"><b>💰 Payment Required</b><br>Scan & Pay via UPI<br><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=college-accounts@upi&pn=College&am=200" class="mx-auto mt-2 border-4 border-black"><br>UPI: college-accounts@upi<br><span class="text-xs">After pay, contact dept to re-approve</span></div>`:''}</div>`;}
+else {cert.innerHTML='<p class="text-gray-400 text-sm">Waiting for approval...</p>';}
+}
+function download(){const my=JSON.parse(localStorage.getItem('requests')).find(r=>r.studentId===id); const {jsPDF}=window.jspdf; const doc=new jsPDF(); doc.text(`NO DUES CERTIFICATE - ${my.studentName} (${my.studentId})`,10,20); doc.text(`Branch: ${my.branch} - All 4 Depts Approved`,10,30); doc.save(`NoDue_${id}.pdf`);}
+function send(){const my=JSON.parse(localStorage.getItem('requests')).find(r=>r.studentId===id); window.open(`mailto:${my.studentEmail}?subject=No Dues Certificate Approved - ${id}&body=Your No-Dues cleared. Download from portal.`,'_blank');}
+function raiseOther(){
+const certs=[]; if(document.getElementById('c_study').checked) certs.push('Study'); if(document.getElementById('c_ssc').checked) certs.push('SSC Memo'); if(document.getElementById('c_puc').checked) certs.push('PUC Memo');
+if(!certs.length) return alert('Select cert');
+const name=document.getElementById('o_name').value.trim(); const email=document.getElementById('o_email').value.trim(); const reason=document.getElementById('o_reason').value; const detail=document.getElementById('o_detail').value.trim();
+if(!name||!email.includes('@')||!reason) return alert('Fill all');
+let ors=JSON.parse(localStorage.getItem('otherRequests')||'[]'); ors.push({id:'OTH'+Date.now(),studentId:id,studentName:name,studentEmail:email,certificates:certs,reason:reason,reasonDetail:detail,date:new Date().toLocaleString(),status:'Pending',remark:''});
+localStorage.setItem('otherRequests',JSON.stringify(ors)); alert('Sent to Exam Cell'); renderOthers();
+}
+function renderOthers(){
+let ors=JSON.parse(localStorage.getItem('otherRequests')||'[]'); const my=ors.filter(r=>r.studentId===id);
+document.getElementById('otherTracker').innerHTML=my.length? my.map(r=>`<div class="border ${r.status==='Approved'?'border-green-500':'border-yellow-500'} p-3 rounded mb-2">${r.certificates.join(', ')} - ${r.status} ${r.remark? '| '+r.remark:''}${r.status==='Approved'? `<div class="bg-white text-black p-2 rounded mt-2 text-center text-xs">Ready to Collect - Token: ${r.id}</div>`:''}</div>`).join('') : '<p class="text-gray-400">No requests</p>';
+}
+</script></body></html>
